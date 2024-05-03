@@ -1072,6 +1072,471 @@ paths:
                   message:
                     type: string
                     example: "Site or device not found"
+  /create_audit:
+    post:
+      tags:
+        - Audit
+      summary: Create a new audit
+      description: This endpoint is used to create a new audit document with provided site, organization, and audit template IDs.
+      operationId: createAudit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - audit
+                - site
+                - org
+                - audit_template
+              properties:
+                audit:
+                  type: string
+                  description: Name of the audit.
+                  example: "audit_name"
+                site:
+                  type: string
+                  description: MongoDB ObjectID of the site associated with the audit.
+                  example: "662d64bbf0f05d3ea385b2d7"
+                org:
+                  type: string
+                  description: MongoDB ObjectID of the organization associated with the audit.
+                  example: "662d64bbf0f05d3ea385b2d7"
+                audit_template:
+                  type: string
+                  description: MongoDB ObjectID of the audit template used.
+                  example: "662d64bbf0f05d3ea385b2d7"
+      responses:
+        '200':
+          description: Audit created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Audit created successfully"
+                  audit_id:
+                    type: string
+                    description: The MongoDB _id of the newly created audit
+                    example: "new_audit_id"
+        '400':
+          description: Bad request - missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid parameters or missing required data"
+        '404':
+          description: Not found - related resource not found (site, organization, or audit template)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Related resource not found"
+      security:
+        - jwt_auth: []
+  /fetch_audits:
+    get:
+      tags:
+        - Audit
+      summary: Fetch all audits
+      description: This endpoint retrieves a list of audits owned by the specified organization. It requires the organization ID to filter the audits.
+      operationId: fetchAudits
+      parameters:
+        - name: org_id
+          in: query
+          description: The MongoDB ObjectID of the organization to fetch audits for.
+          required: true
+          schema:
+            type: string
+            example: "662d64bbf0f05d3ea385b2d7"
+      responses:
+        '200':
+          description: List of audits retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - audit_id
+                    - audit
+                    - site
+                    - org
+                    - audit_template
+                  properties:
+                    audit_id:
+                      type: string
+                      description: The MongoDB _id of the audit.
+                      example: "audit_id_example"
+                    audit:
+                      type: string
+                      description: Name of the audit.
+                      example: "Annual Compliance Audit"
+                    site:
+                      type: string
+                      description: MongoDB ObjectID of the site associated with the audit.
+                      example: "site_id_example"
+                    org:
+                      type: string
+                      description: MongoDB ObjectID of the organization associated with the audit.
+                      example: "org_id_example"
+                    audit_template:
+                      type: string
+                      description: MongoDB ObjectID of the audit template used.
+                      example: "template_id_example"
+        '400':
+          description: Bad request - missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid parameters or missing required data"
+        '404':
+          description: Not found - organization not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Organization not found"
+      security:
+        - jwt_auth: []
+  /update_audit:
+    patch:
+      tags:
+        - Audit
+      summary: Update audit data
+      description: This endpoint adds or updates 'data' in a specific audit document. The data is an object containing various key-value pairs obtained from performing an audit.
+      operationId: updateAudit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - audit_id
+                - data
+              properties:
+                audit_id:
+                  type: string
+                  description: The MongoDB ObjectID of the audit to update.
+                  example: "audit_id_example"
+                data:
+                  type: object
+                  additionalProperties: true
+                  description: Key-value pairs containing data obtained from the audit.
+                  example: { "temperature": "23°C", "humidity": "50%" }
+      responses:
+        '200':
+          description: Audit updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Audit updated successfully"
+        '400':
+          description: Bad request - missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid parameters or missing required data"
+        '404':
+          description: Not found - audit not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Audit not found"
+      security:
+        - jwt_auth: []
+  /upload_image_to_s3_bucket:
+    post:
+      tags:
+        - Audit
+      summary: Upload image to S3 bucket
+      description: This endpoint accepts an image file, uploads it to an S3 bucket, and returns the URL of the uploaded image. It is used in the audit endpoints for uploading images.
+      operationId: uploadImageToS3
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Image file to be uploaded.
+      responses:
+        '200':
+          description: Image uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Image uploaded successfully"
+                  url:
+                    type: string
+                    description: URL of the uploaded image.
+                    example: "https://s3.amazonaws.com/yourbucket/yourimage.jpg"
+        '400':
+          description: Bad request - invalid file format or missing file
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid file format or no file was uploaded"
+        '500':
+          description: Internal Server Error - problem with the server or S3
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Failed to upload image due to internal server error"
+      security:
+        - jwt_auth: []
+  /fetch_user_profile:
+    get:
+      tags:
+        - Profile
+      summary: Fetch user profile
+      description: This endpoint returns detailed profile information about the currently logged-in user.
+      operationId: fetchUserProfile
+      responses:
+        '200':
+          description: Profile data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    description: MongoDB ObjectID of the user.
+                    example: "662d64bbf0f05d3ea385b2d7"
+                  email:
+                    type: string
+                    format: email
+                    description: User's email address.
+                    example: "example@example.com"
+                  firstname:
+                    type: string
+                    description: User's first name.
+                    example: "John"
+                  lastname:
+                    type: string
+                    description: User's last name.
+                    example: "Doe"
+                  dashboards:
+                    type: array
+                    items:
+                      type: string
+                    description: List of dashboards accessible to the user.
+                    example: []
+                  orgs:
+                    type: array
+                    items:
+                      type: string
+                    description: List of organizations the user belongs to.
+                    example: []
+                  phone_number:
+                    type: string
+                    description: User's phone number.
+                    example: "+123456789"
+                  rights:
+                    type: object
+                    properties:
+                      can_assign_device:
+                        type: boolean
+                        example: true
+                      can_create_device:
+                        type: boolean
+                        example: false
+                      can_edit_device:
+                        type: boolean
+                        example: true
+                      can_view_device:
+                        type: boolean
+                        example: true
+                      can_create_site:
+                        type: boolean
+                        example: false
+                      can_edit_site:
+                        type: boolean
+                        example: false
+                      can_view_sites:
+                        type: boolean
+                        example: true
+                      can_view_loadshedding:
+                        type: boolean
+                        example: true
+        '401':
+          description: Unauthorized - User not logged in or session expired
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized access or session expired"
+        '404':
+          description: Not found - User profile not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User profile not found"
+      security:
+        - jwt_auth: []
+        
+  /fetch_org_profile:
+    get:
+      tags:
+        - Profile
+      summary: Fetch organization profile
+      description: This endpoint returns detailed profile information about the organization that the currently logged-in user belongs to.
+      operationId: fetchOrgProfile
+      responses:
+        '200':
+          description: Organization data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    description: MongoDB ObjectID of the organization.
+                    example: "662d64bbf0f05d3ea385b2d7"
+                  org:
+                    type: string
+                    description: Organization's short name.
+                    example: "example_org"
+                  org_name:
+                    type: string
+                    description: Full name of the organization.
+                    example: "Example Organization"
+                  template_id:
+                    type: string
+                    description: ID of the template used by the organization.
+                    example: "template123"
+                  is_sub_org:
+                    type: boolean
+                    description: Indicates if the organization is a sub-organization.
+                    example: false
+                  parent_org:
+                    type: string
+                    nullable: true
+                    description: Parent organization ID if this is a sub-organization.
+                    example: null
+                  sub_orgs:
+                    type: array
+                    items:
+                      type: string
+                    description: List of sub-organizations under this organization.
+                    example: []
+                  sites:
+                    type: array
+                    items:
+                      type: string
+                    description: List of sites under this organization.
+                    example: []
+                  devices:
+                    type: array
+                    items:
+                      type: string
+                    description: List of devices under this organization.
+                    example: []
+                  dashboards:
+                    type: array
+                    items:
+                      type: string
+                    description: List of dashboards managed by this organization.
+                    example: []
+                  users:
+                    type: array
+                    items:
+                      type: string
+                    description: List of users belonging to this organization.
+                    example: []
+                  audit_templates:
+                    type: array
+                    items:
+                      type: string
+                    description: List of audit templates used by the organization.
+                    example: []
+                  meta_templates:
+                    type: array
+                    items:
+                      type: string
+                    description: List of meta templates used by the organization.
+                    example: []
+        '401':
+          description: Unauthorized - User not logged in or session expired
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized access or session expired"
+        '404':
+          description: Not found - Organization profile not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Organization profile not found"
+      security:
+        - jwt_auth: []
+                    
+                    
 components:
   securitySchemes:
     jwt_auth:
